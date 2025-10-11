@@ -1,0 +1,17 @@
+{
+  "name": "tonzhon-desktop",
+  "version": "1.0.0",
+  "description": "tonzhon desktop app",
+  "license": "MIT",
+  "author": {
+    "name": "hacker0limbo",
+    "email": "stephen.yin@outlook.com"
+  },
+  "main": "./dist/main/main.js",
+  "scripts": {
+    "rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
+    "postinstall": "npm run rebuild && npm run link-modules",
+    "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
+  },
+  "dependencies": {}
+}

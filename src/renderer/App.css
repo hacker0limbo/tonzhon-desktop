@@ -1,0 +1,30 @@
+:root {
+  --audio-player-height: 80px;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+.ant-layout-sider-trigger {
+  bottom: var(--audio-player-height) !important;
+}
+
+.link {
+  color: var(--ant-color-text);
+  cursor: pointer;
+}
+
+.link:hover {
+  color: var(--ant-color-link);
+}
+
+.playlist-cover > .ant-image-mask {
+  border-radius: var(--ant-border-radius-lg);
+}
+
+.playlist-cover > .ant-image-mask > span:hover {
+  color: var(--ant-color-primary-hover);
+}
