@@ -236,7 +236,8 @@
       {
         "provider": "github",
         "owner": "hacker0limbo",
-        "repo": "tonzhon-desktop"
+        "repo": "tonzhon-desktop",
+        "releaseType": "release"
       }
     ],
     "directories": {
