@@ -4,9 +4,10 @@
 
 ## 截图
 
-![亮色](./demos/demo1.png)
-
-![暗色](./demos/demo2.png)
+<p align="center">
+  <img src="./demos/demo1.png" width="45%" style="margin-right: 4px;" alt="亮色主题" />
+  <img src="./demos/demo2.png" width="45%" alt="暗色主题" />
+</p>
 
 ## 开发
 
