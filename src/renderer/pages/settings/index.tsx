@@ -9,8 +9,13 @@ import {
   App,
   Radio,
   ColorPicker,
-  Space,
+  Dropdown,
 } from 'antd';
+import {
+  ContactsOutlined,
+  MailOutlined,
+  WechatOutlined,
+} from '@ant-design/icons';
 import { useSettingsStore } from '../../store';
 
 export default function Settings() {
@@ -174,12 +179,52 @@ export default function Settings() {
         <Col span={21}>
           <Flex vertical gap="small" align="start">
             <Typography.Text>
-              当前版本: <strong>{window.electron?.appVersion}</strong>
+              当前版本 <strong>{window.electron?.appVersion}</strong>
             </Typography.Text>
 
             <Flex gap="small" align="baseline">
               <Typography.Text>相关链接</Typography.Text>
-              <Button onClick={() => {}}>GitHub</Button>
+              <Button
+                onClick={() => {
+                  window.electron?.openExternal(
+                    'https://github.com/hacker0limbo/tonzhon-desktop',
+                  );
+                }}
+              >
+                GitHub
+              </Button>
+              <Dropdown
+                placement="topLeft"
+                menu={{
+                  items: [
+                    {
+                      key: 'wechat',
+                      label: 'Limboer_Yin',
+                      icon: <WechatOutlined />,
+                      onClick: () => {
+                        message.success('微信号已复制到剪贴板');
+                        window.electron.copyToClipboard('Limboer_Yin');
+                      },
+                    },
+                    {
+                      key: 'email',
+                      label: 'stephen.yin@outlook.com',
+                      icon: <MailOutlined />,
+                      onClick: () => {
+                        message.success('邮箱已复制到剪贴板');
+                        window.electron.copyToClipboard(
+                          'stephen.yin@outlook.com',
+                        );
+                      },
+                    },
+                  ],
+                }}
+                trigger={['click']}
+              >
+                <Button iconPosition="end" icon={<ContactsOutlined />}>
+                  联系我
+                </Button>
+              </Dropdown>
               <Button
                 onClick={() => {
                   window.electron?.openExternal('https://tonzhon.whamon.com/');

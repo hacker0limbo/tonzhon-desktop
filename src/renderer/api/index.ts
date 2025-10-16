@@ -34,6 +34,8 @@ export type Song = {
   originalId?: string;
   // 来自什么平台, e.g. qq
   platform?: string;
+  // 封面
+  cover?: string;
 };
 
 export type Artist = {
@@ -44,7 +46,7 @@ export type Artist = {
 };
 
 export type Playlist = {
-  cover: string;
+  cover?: string;
   id: string;
   name: string;
 };
@@ -62,6 +64,15 @@ export type PlaylistInfo = {
   songs: Song[];
   __v: number;
   _id: string;
+};
+
+export type User = {
+  username: string;
+  // 收藏的歌单
+  collectedPlaylists: Playlist[];
+  // 创建的歌单
+  playlists: Playlist[];
+  songWorks: [];
 };
 
 // 获取热门歌曲
@@ -123,5 +134,116 @@ export function getPlaylists(index: number) {
 export function searchAll(keyword: string) {
   return axios.get<{ success: boolean; data: Song[] }>(
     `/safe-search?keyword=${keyword}`,
+  );
+}
+
+// 登录
+export function signin(payload: { username: string; password: string }) {
+  return axiosInstance.post<{
+    success: boolean;
+    message?: string;
+    data?: User;
+  }>('/sign_in', payload);
+}
+
+// 登出, status 200 以及 string "OK" 表示成功
+export function signout() {
+  return axiosInstance.post<string>('/sign_out', undefined, {
+    withCredentials: true,
+  });
+}
+
+// 获取用户信息, 需要携带 cookie, 401 表示未登录
+export function getUserInfo() {
+  return axiosInstance.get<User>('/me', {
+    withCredentials: true,
+  });
+}
+
+// 创建歌单 status 201 表示成功, 返回歌单 id
+export function createPlaylist(name: string) {
+  return axiosInstance.post<{ playlistId: string }>(
+    '/playlists',
+    { name },
+    {
+      withCredentials: true,
+    },
+  );
+}
+
+// 获取账户信息
+export function getAccountInfo() {
+  return axiosInstance.get<{ email: string }>('/account', {
+    withCredentials: true,
+  });
+}
+
+// 获取喜欢的歌曲
+export function getFavoriteSongs() {
+  return axiosInstance.get<{ success: boolean; songs: Song[] }>('/favorites', {
+    withCredentials: true,
+  });
+}
+
+// 根据网易云歌单 id 获取歌曲(导入歌单)
+export function getSongsFromNetEasePlaylist(playlistId: string) {
+  return axios.get<{ success: boolean; data: { name: string; songs: Song[] } }>(
+    `/netease_playlist/${playlistId}`,
+  );
+}
+
+// 添加一首歌到喜欢列表
+export function addSongToFavorite(song: Song) {
+  return axiosInstance.post<{ success: boolean }>(
+    '/favorites',
+    {
+      // TODO: 这里可能要注意一下, 给后端传多余的歌曲信息都可以, 只要有 newId, 但是后端是无脑存的不做校验
+      song,
+    },
+    {
+      withCredentials: true,
+    },
+  );
+}
+
+// 移除一首歌从喜欢列表
+export function removeSongFromFavorite(newId: string) {
+  return axiosInstance.delete<{ success: boolean }>(`/favorites/${newId}`, {
+    withCredentials: true,
+  });
+}
+
+// 收藏歌单, 成功返回 201 和 Created 文字
+export function addPlaylistToCollection(
+  playlistId: string,
+  playlistName: string,
+) {
+  return axiosInstance.post<string>(
+    `/playlists/${playlistId}/collectedPlaylists`,
+    {
+      playlistName,
+    },
+    {
+      withCredentials: true,
+    },
+  );
+}
+
+// 添加一首歌到我的某个歌单
+export function addSongToMyPlaylist(playlistId: string, song: Song) {
+  return axiosInstance.put<{ success: boolean }>(
+    `/playlists/${playlistId}/addSong`,
+    { toAdd: song },
+    { withCredentials: true },
+  );
+}
+
+// 从我的某个歌单中移除一首歌
+export function removeSongFromMyPlaylist(playlistId: string, newId: string) {
+  return axiosInstance.delete<{ success: boolean }>(
+    `/playlists/${playlistId}/songs/${newId}`,
+    {
+      withCredentials: true,
+    },
   );
 }

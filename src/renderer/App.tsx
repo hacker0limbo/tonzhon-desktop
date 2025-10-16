@@ -1,16 +1,24 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  BellFilled,
+  ContactsOutlined,
+  CustomerServiceOutlined,
   FolderOpenOutlined,
+  HeartOutlined,
   HomeOutlined,
+  ImportOutlined,
   LeftCircleOutlined,
   LeftOutlined,
+  LogoutOutlined,
+  MoonOutlined,
+  PlusOutlined,
   ReloadOutlined,
   SettingOutlined,
   SoundOutlined,
   StarOutlined,
+  SunOutlined,
   TeamOutlined,
   UserOutlined,
-  VideoCameraOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import {
@@ -26,15 +34,27 @@ import {
   Space,
   Select,
   Avatar,
+  Dropdown,
+  Divider,
+  Row,
+  Col,
+  Collapse,
 } from 'antd';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import ReactJkMusicPlayer from 'react-jinke-music-player';
 import 'react-jinke-music-player/assets/index.css';
-import { useSettingsStore, type PlayerSong } from './store';
-
+import {
+  useAuthStore,
+  useSettingsStore,
+  type PlayerSong,
+  useMusicPlayerStore,
+} from './store';
+import { useCurrentSong, useRefresh } from './hooks';
+import LoginModal from './components/LoginModal';
+import { signout, getUserInfo, getFavoriteSongs } from './api';
+import CreatePlaylistModal from './components/CreatePlaylistModal';
 import './App.css';
-import { useMusicPlayerStore } from './store';
-import { useCurrentSong } from './hooks';
+import Auth from './components/Auth';
 
 const { Header, Content, Sider } = Layout;
 
@@ -53,7 +73,7 @@ const headerItems: MenuProps['items'] = [
   },
 ];
 
-const siderItems: MenuProps['items'] = [
+const navItems: MenuProps['items'] = [
   {
     key: '',
     label: '首页',
@@ -79,16 +99,14 @@ const siderItems: MenuProps['items'] = [
     label: '纯音乐',
     icon: <SoundOutlined />,
   },
-  // {
-  //   key: 'mv',
-  //   label: 'MV',
-  //   icon: <VideoCameraOutlined />,
-  // },
+  {
+    type: 'divider',
+  },
 ];
 
 export default function App() {
   const {
-    token: { colorBgContainer },
+    token: { colorBgContainer, colorPrimary },
   } = theme.useToken();
   const { message } = AntdApp.useApp();
   const navigate = useNavigate();
@@ -114,6 +132,93 @@ export default function App() {
   const currentSong = useCurrentSong();
   const themeMode = useSettingsStore((state) => state.theme.mode);
   const playerInstance = useMusicPlayerStore((state) => state.playerInstance);
+  const login = useAuthStore((state) => state.login);
+  const openLoginModal = useAuthStore((state) => state.openLoginModal);
+  const user = useAuthStore((state) => state.user);
+  const resetAuth = useAuthStore((state) => state.resetAuth);
+  const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const setThemeMode = useSettingsStore((state) => state.setThemeMode);
+  const openCreatePlaylistModal = useAuthStore(
+    (state) => state.openCreatePlaylistModal,
+  );
+  const { refreshUserInfo, refreshFavoriteSongs } = useRefresh();
+
+  const userMenuSelectedKey = useMemo(() => {
+    const [_, path, dynamicPath] = location.pathname.split('/');
+
+    if (path?.includes('my-playlists')) {
+      return `playlist-${dynamicPath}`;
+    }
+
+    if (path?.includes('profile')) {
+      return new URLSearchParams(location.search).get('tab') || 'favorites';
+    }
+
+    return path;
+  }, [location]);
+
+  const userItems = useMemo<MenuProps['items']>(() => {
+    return [
+      {
+        key: 'user',
+        label: '我的',
+        type: 'group',
+        children: [
+          {
+            key: 'favorites',
+            label: '我喜欢的音乐',
+            icon: <HeartOutlined />,
+          },
+          {
+            key: 'collections',
+            label: '我的收藏',
+            icon: <StarOutlined />,
+          },
+          {
+            key: 'import-playlist',
+            label: '导入歌单',
+            icon: <ImportOutlined />,
+          },
+        ],
+      },
+      {
+        type: 'divider',
+      },
+      {
+        key: 'playlists',
+        type: 'group',
+        label: (
+          <Flex
+            justify="space-between"
+            style={{ color: 'var(--ant-menu-group-title-color)' }}
+            align="center"
+          >
+            歌单
+            <Auth>
+              <PlusOutlined
+                title="创建歌单"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  openCreatePlaylistModal();
+                }}
+              />
+            </Auth>
+          </Flex>
+        ),
+        children: login
+          ? user?.playlists?.map((p) => ({
+              key: `playlist-${p.id}`,
+              label: p.name,
+              icon: <CustomerServiceOutlined />,
+            }))
+          : [],
+      },
+      {
+        type: 'divider',
+        style: login ? {} : { display: 'none' },
+      },
+    ];
+  }, [login, openCreatePlaylistModal, user?.playlists]);
 
   // 全局监听下载结果
   useEffect(() => {
@@ -170,6 +275,16 @@ export default function App() {
     };
   }, [playerInstance]);
 
+  useEffect(() => {
+    refreshUserInfo();
+  }, [refreshUserInfo]);
+
+  useEffect(() => {
+    if (login) {
+      refreshFavoriteSongs();
+    }
+  }, [login, refreshFavoriteSongs]);
+
   return (
     <Layout style={{ height: 'calc(100vh - var(--audio-player-height))' }}>
       <Header
@@ -189,7 +304,7 @@ export default function App() {
               navigate('/');
             }}
           >
-            铜钟
+            <BellFilled /> 铜钟
           </Typography.Title>
           <Flex align="center" gap="small">
             <Button
@@ -249,32 +364,163 @@ export default function App() {
               );
             }}
           />
-          <Flex gap={4} align="center">
-            <Avatar icon={<UserOutlined />} size="small" />
-            未登录
-          </Flex>
-          <Button
-            title="设置"
-            icon={<SettingOutlined />}
-            size="small"
-            shape="circle"
-            onClick={() => {
-              navigate('/settings');
-            }}
-          />
+          {login ? (
+            <Dropdown
+              placement="bottom"
+              arrow={{ pointAtCenter: true }}
+              trigger={['click']}
+              // TODO: 下拉框不对齐
+              menu={{
+                items: [
+                  {
+                    key: 'user-account',
+                    label: '个人主页',
+                    icon: <ContactsOutlined />,
+                    onClick: () => {
+                      navigate('/profile');
+                    },
+                  },
+                  {
+                    type: 'divider',
+                  },
+                  {
+                    key: 'sign-out',
+                    label: '退出登录',
+                    icon: <LogoutOutlined />,
+                    onClick: () => {
+                      signout()
+                        .then((res) => {
+                          if (res.status === 200 && res.data === 'OK') {
+                            message.success('已退出登录');
+                            // 清理登录状态
+                            resetAuth();
+                          } else {
+                            message.error('退出登录失败, 请重试');
+                          }
+                        })
+                        .catch(() => {
+                          message.error('退出登录失败, 请重试');
+                        });
+                    },
+                  },
+                ],
+              }}
+            >
+              <Flex style={{ cursor: 'pointer' }} gap={4} align="center">
+                <Avatar size="small" style={{ background: colorPrimary }}>
+                  {user?.username?.[0] ?? '用户'}
+                </Avatar>
+                {user?.username ?? '用户'}
+              </Flex>
+            </Dropdown>
+          ) : (
+            <Flex
+              style={{ cursor: 'pointer' }}
+              gap={4}
+              align="center"
+              onClick={() => {
+                // 打开登录弹框
+                openLoginModal();
+              }}
+            >
+              <Avatar icon={<UserOutlined />} size="small" />
+              未登录
+            </Flex>
+          )}
         </Flex>
       </Header>
       <Layout>
-        <Sider theme="light" collapsible>
-          <Menu
-            mode="inline"
-            items={siderItems}
-            selectedKeys={[location.pathname.split('/')[1]]}
-            onSelect={({ key }) => {
-              navigate(`/${key}`);
-            }}
-          />
+        <Sider
+          theme="light"
+          collapsible
+          trigger={null}
+          collapsed={siderCollapsed}
+          className="left-sider"
+          style={{ overflowY: 'auto' }}
+        >
+          <div>
+            <Menu
+              mode="inline"
+              items={navItems}
+              selectedKeys={[location.pathname.split('/')[1]]}
+              onSelect={({ key }) => {
+                navigate(`/${key}`);
+              }}
+            />
+
+            <Menu
+              mode="inline"
+              items={userItems}
+              selectedKeys={[userMenuSelectedKey]}
+              onSelect={({ key }) => {
+                if (!login) {
+                  // 未登录打开登录弹框
+                  openLoginModal();
+                  return;
+                }
+
+                if (key.includes('playlist-')) {
+                  const playlistId = key.split('playlist-')?.[1];
+                  navigate(`/my-playlists/${playlistId}`);
+                } else if (['favorites', 'collections'].includes(key)) {
+                  navigate(`/profile?tab=${key}`);
+                } else {
+                  navigate(`/${key}`);
+                }
+              }}
+            />
+          </div>
+
+          <Row style={{ margin: '12px 0' }}>
+            <Col span={siderCollapsed ? 24 : 8} style={{ textAlign: 'center' }}>
+              <LeftCircleOutlined
+                rotate={siderCollapsed ? 180 : 0}
+                title={siderCollapsed ? '展开' : '收起'}
+                className="icon-link"
+                style={{ fontSize: 16 }}
+                onClick={() => {
+                  setSiderCollapsed(!siderCollapsed);
+                }}
+              />
+            </Col>
+            {siderCollapsed ? null : (
+              <>
+                <Col span={8} style={{ textAlign: 'center' }}>
+                  <SettingOutlined
+                    className="icon-link"
+                    style={{ fontSize: 16 }}
+                    title="设置"
+                    onClick={() => {
+                      navigate('/settings');
+                    }}
+                  />
+                </Col>
+                <Col span={8} style={{ textAlign: 'center' }}>
+                  {themeMode === 'light' ? (
+                    <SunOutlined
+                      className="icon-link"
+                      style={{ fontSize: 16 }}
+                      title="切换主题"
+                      onClick={() => {
+                        setThemeMode('dark');
+                      }}
+                    />
+                  ) : (
+                    <MoonOutlined
+                      className="icon-link"
+                      style={{ fontSize: 16 }}
+                      title="切换主题"
+                      onClick={() => {
+                        setThemeMode('light');
+                      }}
+                    />
+                  )}
+                </Col>
+              </>
+            )}
+          </Row>
         </Sider>
+
         <Layout style={{ padding: '16px' }}>
           <Content
             ref={contentRef}
@@ -339,6 +585,11 @@ export default function App() {
           setIsPlayerPlaying(false);
         }}
         customDownloader={({ src }) => {
+          if (!login) {
+            openLoginModal();
+            return;
+          }
+
           if (currentSong && src) {
             window.electron?.downloadFile({
               url: src,
@@ -350,6 +601,9 @@ export default function App() {
         loadAudioErrorPlayNext={loadAudioErrorPlayNext}
         {...playerConfigs}
       />
+
+      <LoginModal />
+      <CreatePlaylistModal />
     </Layout>
   );
 }

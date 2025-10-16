@@ -1,15 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import {
   CustomerServiceOutlined,
-  HeartOutlined,
   ShareAltOutlined,
+  StarFilled,
+  StarOutlined,
 } from '@ant-design/icons';
 import { Flex, Image, Typography, Button, theme, Divider, App } from 'antd';
 import { useParams } from 'react-router-dom';
-import { type PlaylistInfo, getPlaylistInfo } from '../../api';
+import {
+  type PlaylistInfo,
+  getPlaylistInfo,
+  addPlaylistToCollection,
+} from '../../api';
 import { fallbackCover, formatCount, getPlaylistCoverUrl } from '../../utils';
 import SongTable from '../../components/SongTable';
+import { useAuthStore } from '../../store';
+import { useRefresh } from '../../hooks';
+import { REFRESH_PLAYLIST_EVENT } from '../../constants';
 
 export default function Playlist() {
   const [playlistInfo, setPlaylistInfo] = useState<PlaylistInfo>();
@@ -19,8 +27,34 @@ export default function Playlist() {
     token: { borderRadiusLG },
   } = theme.useToken();
   const [loading, setLoading] = useState(false);
+  const collectedPlaylists = useAuthStore(
+    (state) => state.user?.collectedPlaylists,
+  );
+  const { refreshUserInfo } = useRefresh();
+  // 该歌单是否被收藏
+  const isPlaylistCollected = useMemo(
+    () => collectedPlaylists?.some((playlist) => playlist.id === id),
+    [collectedPlaylists, id],
+  );
 
-  useEffect(() => {
+  const collectPlaylist = useCallback(() => {
+    if (id && playlistInfo) {
+      addPlaylistToCollection(id, playlistInfo.name)
+        .then((res) => {
+          if (res.status >= 200 && res.status < 300) {
+            message.success('收藏歌单成功');
+          }
+        })
+        .catch(() => {
+          message.error('收藏歌单失败');
+        })
+        .finally(() => {
+          refreshUserInfo();
+        });
+    }
+  }, [id, message, playlistInfo, refreshUserInfo]);
+
+  const fetchPlaylistInfo = useCallback(() => {
     if (id) {
       setLoading(true);
       getPlaylistInfo(id)
@@ -37,6 +71,19 @@ export default function Playlist() {
         });
     }
   }, [id, message]);
+
+  useEffect(() => {
+    fetchPlaylistInfo();
+  }, [fetchPlaylistInfo]);
+
+  // 监听自定义事件, 用于刷新歌单信息
+  useEffect(() => {
+    window.addEventListener(REFRESH_PLAYLIST_EVENT, fetchPlaylistInfo);
+
+    return () => {
+      window.removeEventListener(REFRESH_PLAYLIST_EVENT, fetchPlaylistInfo);
+    };
+  }, [fetchPlaylistInfo]);
 
   return (
     <>
@@ -67,10 +114,25 @@ export default function Playlist() {
             </Flex>
           </div>
           <Flex gap="small">
-            <Button icon={<CustomerServiceOutlined />} title="播放" disabled>
+            <Button icon={<CustomerServiceOutlined />} title="播放量">
               {formatCount(playlistInfo?.playCount)}
             </Button>
-            <Button icon={<HeartOutlined />} title="收藏" disabled>
+            <Button
+              icon={
+                isPlaylistCollected ? (
+                  <StarFilled style={{ color: 'var(--ant-pink)' }} />
+                ) : (
+                  <StarOutlined />
+                )
+              }
+              title="收藏"
+              onClick={() => {
+                // TODO: 暂无取消收藏功能
+                if (!isPlaylistCollected) {
+                  collectPlaylist();
+                }
+              }}
+            >
               {formatCount(playlistInfo?.collectCount)}
             </Button>
             <Button

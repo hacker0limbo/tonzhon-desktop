@@ -1,6 +1,12 @@
 # Tonzhon-Desktop
 
-[铜钟](https://tonzhon.whamon.com)客户端
+[铜钟](https://tonzhon.whamon.com)客户端, 网页版请访问: https://tonzhon.whamon.com/
+
+## 截图
+
+![亮色](./demos/demo1.png)
+
+![暗色](./demos/demo2.png)
 
 ## 开发
 
@@ -16,3 +22,9 @@ npm run start
 ```bash
 electron_mirror=https://npmmirror.com/mirrors/electron/
 ```
+
+## TODO
+
+- [ ] 歌单无法上传图片
+- [ ] 取消收藏某歌单
+- [ ] 删除自己创建的歌单

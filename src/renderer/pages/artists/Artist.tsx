@@ -14,8 +14,9 @@ import {
   Divider,
   App,
 } from 'antd';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
+import { uniqBy } from 'lodash';
 import {
   getSongsOfArtist,
   type Song,
@@ -30,76 +31,77 @@ export default function Artist() {
   const pic = searchParams.get('pic');
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchedSongs, setSearchedSongs] = useState<Song[]>([]);
+  const [loadingSearch, setLoadingSearch] = useState(false);
 
+  const totalSongs = useMemo(
+    () => uniqBy([...songs, ...searchedSongs], 'newId'),
+    [songs, searchedSongs],
+  );
+
+  // 直接获取歌手的歌曲, 注意部分歌手可能没有这个接口会进到 catch 里
   useEffect(() => {
     setLoading(true);
-    if (pic) {
-      getSongsOfArtist(name)
-        .then((res) => {
-          setSongs(res.data?.songs ?? []);
-        })
-        .catch(() => {
-          message.error('获取该歌手的歌曲失败');
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
-      Promise.allSettled(
-        ['q', 'n', 'k'].map((search) => getSongsOfArtistBySearch(name, search)),
-      )
-        .then((results) => {
-          const allSongs: Song[] = [];
-          results.forEach((result) => {
-            if (result.status === 'fulfilled') {
-              if (result.value.data.success) {
-                allSongs.push(...(result.value?.data?.data?.songs ?? []));
-              }
+    getSongsOfArtist(name)
+      .then((res) => {
+        setSongs(res.data?.songs ?? []);
+      })
+      .catch(() => {
+        // message.error('获取该歌手的歌曲失败');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [message, name]);
+
+  useEffect(() => {
+    setLoadingSearch(true);
+    Promise.allSettled(
+      ['q', 'n', 'k'].map((search) => getSongsOfArtistBySearch(name, search)),
+    )
+      .then((results) => {
+        const allSongs: Song[] = [];
+        results.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            if (result.value.data.success) {
+              allSongs.push(...(result.value?.data?.data?.songs ?? []));
             }
-          });
-          setSongs(allSongs);
-        })
-        .catch(() => {
-          message.error('获取该歌手的歌曲失败');
-        })
-        .finally(() => {
-          setLoading(false);
+          }
         });
-    }
-  }, [message, name, pic]);
+        setSearchedSongs(allSongs);
+      })
+      .catch(() => {
+        message.error('获取该歌手的歌曲失败');
+      })
+      .finally(() => {
+        setLoadingSearch(false);
+      });
+  }, [message, name]);
 
   return (
     <>
-      <List
-        dataSource={[1]}
-        renderItem={() => (
-          <List.Item>
-            <List.Item.Meta
-              avatar={
-                pic ? (
-                  <Avatar src={pic} size={96} />
-                ) : (
-                  <Avatar icon={<UserOutlined />} size={96} />
-                )
-              }
-              title={
-                <Typography.Text style={{ fontSize: 28, marginBottom: 16 }}>
-                  {name}
-                </Typography.Text>
-              }
-              description={
-                <Button icon={<PlusOutlined />} disabled>
-                  关注
-                </Button>
-              }
-            />
-          </List.Item>
+      <Flex gap="middle">
+        {pic ? (
+          <Avatar src={pic} size={96} />
+        ) : (
+          <Avatar icon={<UserOutlined />} size={96} />
         )}
-      />
+        <div>
+          <Typography.Text
+            strong
+            style={{ fontSize: 28, display: 'block', marginBottom: 4 }}
+          >
+            {name}
+          </Typography.Text>
+          <Button icon={<PlusOutlined />} disabled>
+            关注
+          </Button>
+        </div>
+      </Flex>
 
-      <Divider style={{ marginTop: 0 }} size="middle" />
+      <Divider size="middle" />
 
-      <SongTable songs={songs} loading={loading} />
+      <SongTable songs={totalSongs} loading={loading || loadingSearch} />
     </>
   );
 }

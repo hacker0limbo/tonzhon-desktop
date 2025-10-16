@@ -1,16 +1,18 @@
-import { useEffect, useMemo } from 'react';
-import { App, Button, Flex } from 'antd';
+import { useMemo } from 'react';
+import { Flex } from 'antd';
 import {
-  CopyOutlined,
-  DownloadOutlined,
+  EllipsisOutlined,
+  HeartFilled,
+  HeartOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
-  PlusSquareOutlined,
+  PlusCircleOutlined,
 } from '@ant-design/icons';
-import { copySongInfoToClipboard } from '../utils';
-import { type Song, getSongSrc } from '../api';
-import { usePlayer, useSong } from '../hooks';
+import { type Song } from '../api';
+import { useFavorite, usePlayer, useSong } from '../hooks';
 import { useMusicPlayerStore } from '../store';
+import SongActionsDropdown from './SongActionsDropdown';
+import Auth from './Auth';
 
 type SongTableActionsProps = {
   song: Song;
@@ -18,7 +20,6 @@ type SongTableActionsProps = {
 
 // 为了使用自定义 hook, 专门抽出一个组件
 export default function SongTableActions({ song }: SongTableActionsProps) {
-  const { message } = App.useApp();
   const { matchCurrentSong, isSongPlaying } = useSong(song);
   const { playOrPauseCurrentSong, playNewSong, addSongToPlaylist } =
     usePlayer();
@@ -27,68 +28,74 @@ export default function SongTableActions({ song }: SongTableActionsProps) {
     () => brokenSongIds.includes(song?.newId),
     [brokenSongIds, song?.newId],
   );
+  const { isSongFavorite, favoriteSong, unFavoriteSong } = useFavorite(song);
 
   return (
-    <Flex gap={0}>
-      <Button
-        // 显示下一个状态
-        disabled={disabled}
-        title={isSongPlaying ? '暂停' : '播放'}
-        size="small"
-        type="link"
-        icon={isSongPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
-        onClick={() => {
-          if (matchCurrentSong) {
-            // 是当前歌曲, 下一步操作
-            playOrPauseCurrentSong();
-          } else {
-            // 不存在歌曲或者不是当前这首歌, 播放这首新歌
-            playNewSong(song);
-          }
-        }}
-      />
-      <Button
-        disabled={disabled}
-        title="添加到播放列表"
-        size="small"
-        type="link"
-        icon={<PlusSquareOutlined />}
+    <Flex gap="small" align="center">
+      {isSongPlaying ? (
+        <PauseCircleOutlined
+          title="暂停"
+          className={disabled ? 'disabled-icon-link' : 'icon-link'}
+          onClick={() => {
+            if (matchCurrentSong) {
+              // 是当前歌曲, 下一步操作
+              playOrPauseCurrentSong();
+            } else {
+              // 不存在歌曲或者不是当前这首歌, 播放这首新歌
+              playNewSong(song);
+            }
+          }}
+        />
+      ) : (
+        <PlayCircleOutlined
+          title="播放"
+          className={disabled ? 'disabled-icon-link' : 'icon-link'}
+          onClick={() => {
+            if (matchCurrentSong) {
+              // 是当前歌曲, 下一步操作
+              playOrPauseCurrentSong();
+            } else {
+              // 不存在歌曲或者不是当前这首歌, 播放这首新歌
+              playNewSong(song);
+            }
+          }}
+        />
+      )}
+
+      <PlusCircleOutlined
+        title="添加"
+        className={disabled ? 'disabled-icon-link' : 'icon-link'}
         onClick={() => {
           addSongToPlaylist(song);
         }}
       />
-      <Button
-        disabled={disabled}
-        title="下载"
-        size="small"
-        type="link"
-        icon={<DownloadOutlined />}
-        onClick={() => {
-          getSongSrc(song.newId)
-            .then((res) => {
-              if (res?.data?.success) {
-                window.electron?.downloadFile({
-                  url: res.data.data,
-                  name: song.name,
-                });
-              } else {
-                message.error('获取下载链接失败');
-              }
-            })
-            .catch(() => {
-              message.error('获取下载链接失败');
-            });
-        }}
-      />
-      <Button
-        title="复制歌曲信息"
-        size="small"
-        type="link"
-        icon={<CopyOutlined />}
-        onClick={() => {
-          copySongInfoToClipboard(song);
-        }}
-      />
+
+      {isSongFavorite ? (
+        <Auth>
+          <HeartFilled
+            style={{ color: 'var(--ant-pink)' }}
+            title="取消喜欢"
+            className={disabled ? 'disabled-icon-link' : ''}
+            onClick={() => {
+              unFavoriteSong();
+            }}
+          />
+        </Auth>
+      ) : (
+        <Auth>
+          <HeartOutlined
+            title="喜欢"
+            className={disabled ? 'disabled-icon-link' : 'icon-link'}
+            onClick={() => {
+              favoriteSong();
+            }}
+          />
+        </Auth>
+      )}
+
+      <SongActionsDropdown trigger={['click']} song={song}>
+        <EllipsisOutlined title="更多操作" className="icon-link" />
+      </SongActionsDropdown>
     </Flex>
   );
 }

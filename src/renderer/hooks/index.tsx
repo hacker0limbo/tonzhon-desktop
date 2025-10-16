@@ -1,7 +1,13 @@
 import { useMemo, useCallback } from 'react';
-import { App as AntdApp } from 'antd';
-import { useMusicPlayerStore } from '../store';
-import { type Song } from '../api';
+import { App as AntdApp, App } from 'antd';
+import { useAuthStore, useMusicPlayerStore } from '../store';
+import {
+  getUserInfo,
+  type Song,
+  addSongToFavorite,
+  removeSongFromFavorite,
+  getFavoriteSongs,
+} from '../api';
 
 // 获取当前播放的歌曲
 export function useCurrentSong() {
@@ -106,5 +112,105 @@ export function usePlayer() {
     playOrPauseCurrentSong,
     addSongToPlaylist,
     addSongsToPlaylist,
+  };
+}
+
+// 刷新用户信息
+export function useRefresh() {
+  const setLogin = useAuthStore((state) => state.setLogin);
+  const setUser = useAuthStore((state) => state.setUser);
+  const setFavoriteSongs = useAuthStore((state) => state.setFavoriteSongs);
+
+  // 获取用户信息
+  const refreshUserInfo = useCallback(() => {
+    getUserInfo()
+      .then((res) => {
+        if (res.status === 200) {
+          setLogin(true);
+          setUser(res.data);
+        } else {
+          setLogin(false);
+        }
+      })
+      .catch(() => {
+        setLogin(false);
+      });
+  }, [setLogin, setUser]);
+
+  // 获取我喜欢的音乐
+  const refreshFavoriteSongs = useCallback(() => {
+    getFavoriteSongs().then((res) => {
+      if (res.data.success) {
+        setFavoriteSongs(res.data.songs);
+      }
+    });
+  }, [setFavoriteSongs]);
+
+  return {
+    refreshUserInfo,
+    refreshFavoriteSongs,
+  };
+}
+
+// 给定某一首歌曲, 返回这首歌的喜欢状态和操作
+export function useFavorite(song?: Song) {
+  const { message } = App.useApp();
+  const { refreshFavoriteSongs } = useRefresh();
+  const favoriteSongs = useAuthStore((state) => state.favoriteSongs);
+  // 歌曲是否被喜欢
+  const isSongFavorite = useMemo(() => {
+    if (!song || !favoriteSongs.length) {
+      return false;
+    }
+    return favoriteSongs.some((s) => s.newId === song?.newId);
+  }, [favoriteSongs, song]);
+
+  const favoriteSong = useCallback(() => {
+    if (!song) {
+      return;
+    }
+    addSongToFavorite(song)
+      .then((res) => {
+        if (res.data.success) {
+          message.success('已添加到我喜欢');
+        } else {
+          message.error('添加到我喜欢失败');
+        }
+      })
+      .catch(() => {
+        message.error('添加到我喜欢失败');
+      })
+      .finally(() => {
+        // 无论成功失败更新喜欢列表
+        refreshFavoriteSongs();
+      });
+  }, [message, song, refreshFavoriteSongs]);
+
+  const unFavoriteSong = useCallback(() => {
+    if (!song) {
+      return;
+    }
+
+    removeSongFromFavorite(song.newId)
+      .then((res) => {
+        if (res.data.success) {
+          message.success('已取消喜欢');
+        } else {
+          message.error('取消喜欢失败');
+        }
+      })
+      .catch(() => {
+        message.error('取消喜欢失败');
+      })
+      .finally(() => {
+        // 无论成功失败更新喜欢列表
+        refreshFavoriteSongs();
+      });
+  }, [message, song, refreshFavoriteSongs]);
+
+  return {
+    isSongFavorite,
+    favoriteSong,
+    unFavoriteSong,
   };
 }

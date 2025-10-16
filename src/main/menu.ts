@@ -4,7 +4,9 @@ import {
   shell,
   BrowserWindow,
   MenuItemConstructorOptions,
+  session,
 } from 'electron';
+import { signout } from '../renderer/api';
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string;
@@ -159,7 +161,9 @@ export default class MenuBuilder {
         {
           label: 'GitHub',
           click() {
-            shell.openExternal('https://github.com/');
+            shell.openExternal(
+              'https://github.com/hacker0limbo/tonzhon-desktop',
+            );
           },
         },
         {
@@ -191,7 +195,7 @@ export default class MenuBuilder {
   buildDefaultTemplate() {
     const templateDefault = [
       {
-        label: '&File',
+        label: '开始',
         submenu: [
           {
             label: '设置',
@@ -200,7 +204,7 @@ export default class MenuBuilder {
             },
           },
           {
-            label: '&关闭',
+            label: '关闭',
             accelerator: 'Ctrl+W',
             click: () => {
               this.mainWindow.close();
@@ -209,7 +213,7 @@ export default class MenuBuilder {
         ],
       },
       {
-        label: '&视图',
+        label: '视图',
         submenu: [
           {
             label: '切换全屏',
@@ -226,7 +230,9 @@ export default class MenuBuilder {
           {
             label: 'GitHub',
             click() {
-              shell.openExternal('https://github.com/');
+              shell.openExternal(
+                'https://github.com/hacker0limbo/tonzhon-desktop',
+              );
             },
           },
           {

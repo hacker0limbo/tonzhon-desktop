@@ -232,6 +232,13 @@
       ],
       "category": "Development"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "hacker0limbo",
+        "repo": "tonzhon-desktop"
+      }
+    ],
     "directories": {
       "app": "release/app",
       "buildResources": "assets",
@@ -239,12 +246,7 @@
     },
     "extraResources": [
       "./assets/**"
-    ],
-    "publish": {
-      "provider": "github",
-      "owner": "electron-react-boilerplate",
-      "repo": "electron-react-boilerplate"
-    }
+    ]
   },
   "devEngines": {
     "runtime": {

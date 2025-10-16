@@ -21,10 +21,40 @@ body {
   color: var(--ant-color-link);
 }
 
+/* 虽然 disabled 还是可以点击, 只是样式变成 disabled 样式 */
+.disabled-link {
+  color: var(--ant-color-text-disabled);
+  cursor: pointer;
+}
+
+.disabled-link:hover {
+  color: var(--ant-color-link);
+}
+
 .playlist-cover > .ant-image-mask {
   border-radius: var(--ant-border-radius-lg);
 }
 
 .playlist-cover > .ant-image-mask > span:hover {
   color: var(--ant-color-primary-hover);
+}
+
+.icon-link {
+  cursor: pointer;
+  color: var(--ant-color-text-description);
+}
+
+.icon-link:hover {
+  color: var(--ant-color-link);
+}
+
+.disabled-icon-link {
+  cursor: not-allowed;
+  color: var(--ant-color-text-disabled);
+}
+
+.left-sider > .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
+  Avatar,
   Button,
   Flex,
   Popover,
@@ -7,6 +8,7 @@ import {
   Table,
   Typography,
   type TableProps,
+  theme,
 } from 'antd';
 import {
   CheckOutlined,
@@ -15,11 +17,13 @@ import {
   PlusSquareOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { type Song } from '../api';
 import { useMusicPlayerStore } from '../store';
 import SongTableActions from './SongTableActions';
 import ContextMenuRow from './ContextMenuRow';
 import { usePlayer } from '../hooks';
+import { fallbackCover } from '../utils';
 
 type SongTableProps = {
   songs: Song[];
@@ -27,6 +31,10 @@ type SongTableProps = {
 };
 
 export default function SongTable({ songs, loading }: SongTableProps) {
+  const {
+    token: { borderRadius },
+  } = theme.useToken();
+  const navigate = useNavigate();
   const { addSongsToPlaylist } = usePlayer();
   const resetNewSongs = useMusicPlayerStore((state) => state.resetNewSongs);
   const [showBatchActions, setShowBatchActions] = useState(false);
@@ -61,7 +69,14 @@ export default function SongTable({ songs, loading }: SongTableProps) {
               </Typography.Text>
             }
           >
-            <Flex gap="small">
+            <Flex gap="small" align="center">
+              <img
+                src={record.cover || fallbackCover}
+                width={32}
+                height={32}
+                alt="cover"
+                style={{ borderRadius }}
+              />
               <Typography.Text disabled={disabled}>{name}</Typography.Text>
               {record.alias ? (
                 <Typography.Text type="secondary">
@@ -85,9 +100,11 @@ export default function SongTable({ songs, loading }: SongTableProps) {
           <Space size={4} split="/">
             {artists?.map((artist) => (
               <Typography.Text
-                className={disabled ? '' : 'link'}
+                className={disabled ? 'disabled-link' : 'link'}
                 key={artist.id}
-                disabled={disabled}
+                onClick={() => {
+                  navigate(`/artists/${artist.name}`);
+                }}
               >
                 {artist?.name}
               </Typography.Text>
@@ -132,7 +149,7 @@ export default function SongTable({ songs, loading }: SongTableProps) {
               resetNewSongs(songs);
             }
           }}
-          disabled={disabledBatchAction}
+          disabled={disabledBatchAction || !songs.length}
         >
           {showBatchActions ? '批量播放' : '播放全部'}
         </Button>
@@ -152,6 +169,7 @@ export default function SongTable({ songs, loading }: SongTableProps) {
           {showBatchActions ? '批量下载' : '下载全部'}
         </Button>
         <Button
+          disabled={!songs.length}
           icon={
             showBatchActions ? <CheckOutlined /> : <UnorderedListOutlined />
           }

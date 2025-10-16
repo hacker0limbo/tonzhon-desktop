@@ -32,12 +32,6 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-// ipcMain.on('ipc-example', async (event, arg) => {
-//   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-//   console.log(msgTemplate(arg));
-//   event.reply('ipc-example', msgTemplate('pong'));
-// });
-
 // 监听渲染进程发送的复制文本请求
 ipcMain.on('copy-to-clipboard', (event, text) => {
   clipboard.writeText(text);
@@ -131,24 +125,26 @@ const createWindow = async () => {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
+      webSecurity: false,
     },
   });
 
-  // 绕过 cors 限制
-  mainWindow.webContents.session.webRequest.onBeforeSendHeaders(
+  // 拦截 cookie, 为 sign_in 接口设置 SameSite=None; Secure 允许可以以跨域携带 cookie
+  // https://github.com/electron/electron/issues/22345#issuecomment-2106117498
+  session.defaultSession.webRequest.onHeadersReceived(
+    { urls: ['https://tonzhon.whamon.com/api/sign_in'] },
     (details, callback) => {
-      callback({ requestHeaders: { Origin: '*', ...details.requestHeaders } });
-    },
-  );
-
-  mainWindow.webContents.session.webRequest.onHeadersReceived(
-    (details, callback) => {
-      callback({
-        responseHeaders: {
-          'Access-Control-Allow-Origin': ['*'],
-          ...details.responseHeaders,
-        },
-      });
+      if (
+        details.responseHeaders &&
+        details.responseHeaders['set-cookie'] &&
+        details.responseHeaders['set-cookie'].length
+      ) {
+        details.responseHeaders['set-cookie'][0] =
+          details.responseHeaders['set-cookie'][0] + '; SameSite=None; Secure';
+        callback({
+          responseHeaders: details.responseHeaders,
+        });
+      }
     },
   );
 

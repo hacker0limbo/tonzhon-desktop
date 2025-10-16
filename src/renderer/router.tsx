@@ -10,6 +10,9 @@ import Playlists from './pages/playlists';
 import Pure from './pages/pure';
 import Search from './pages/search';
 import Settings from './pages/settings';
+import Profile from './pages/profile';
+import ImportPlaylist from './pages/playlists/ImportPlaylist';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const router = createMemoryRouter([
   {
@@ -52,6 +55,30 @@ const router = createMemoryRouter([
       {
         path: '/settings',
         element: <Settings />,
+      },
+      {
+        path: '/profile',
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/my-playlists/:id',
+        element: (
+          <ProtectedRoute>
+            <Playlist />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/import-playlist',
+        element: (
+          <ProtectedRoute>
+            <ImportPlaylist />
+          </ProtectedRoute>
+        ),
       },
     ],
   },

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { Avatar, Col, Flex, Row, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { type Artist } from '../api';
