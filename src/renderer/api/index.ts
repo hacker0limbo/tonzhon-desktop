@@ -247,3 +247,34 @@ export function removeSongFromMyPlaylist(playlistId: string, newId: string) {
     },
   );
 }
+
+// 重置密码, 成功返回 success: true, 否则返回错误信息
+export function resetPassword(payload: {
+  username: string;
+  email: string;
+  password: string;
+}) {
+  return axiosInstance.post<{ success: boolean; message?: string }>(
+    '/reset_password',
+    payload,
+  );
+}
+
+// 注册时校验用户名, status 200 表示可用, 422 表示已被占用
+export function checkUsername(payload: { username: string }) {
+  return axiosInstance.post<string>('/username_availability_check', payload);
+}
+
+// 注册时校验邮箱, status 200 表示可用, 422 表示已被占用
+export function checkEmail(payload: { email: string }) {
+  return axiosInstance.post<string>('/email_availability_check', payload);
+}
+
+// 注册接口, status 201 代表注册成功, 返回 Created
+export function signup(payload: {
+  username: string;
+  email: string;
+  password: string;
+}) {
+  return axiosInstance.post<string>('/sign_up', payload);
+}

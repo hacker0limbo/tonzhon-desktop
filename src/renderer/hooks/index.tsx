@@ -7,6 +7,9 @@ import {
   addSongToFavorite,
   removeSongFromFavorite,
   getFavoriteSongs,
+  type Playlist,
+  addPlaylistToCollection,
+  getPlaylistInfo,
 } from '../api';
 
 // 获取当前播放的歌曲
@@ -212,5 +215,70 @@ export function useFavorite(song?: Song) {
     isSongFavorite,
     favoriteSong,
     unFavoriteSong,
+  };
+}
+
+// 给定一个 playlist, 返回该歌单的收藏状态和操作
+export function usePlaylistCollection(playlist?: Partial<Playlist>) {
+  const { message } = App.useApp();
+  const collectedPlaylists = useAuthStore(
+    (state) => state.user?.collectedPlaylists,
+  );
+  const { refreshUserInfo } = useRefresh();
+  const resetNewSongs = useMusicPlayerStore((state) => state.resetNewSongs);
+
+  // 该歌单是否被收藏
+  const isPlaylistCollected = useMemo(() => {
+    if (!playlist?.id) {
+      return false;
+    }
+    return collectedPlaylists?.some((p) => p.id === playlist?.id);
+  }, [collectedPlaylists, playlist?.id]);
+
+  // 收藏某歌单
+  const collectPlaylist = useCallback(() => {
+    if (playlist?.id && playlist.name) {
+      addPlaylistToCollection(playlist.id, playlist.name)
+        .then((res) => {
+          if (res.status >= 200 && res.status < 300) {
+            message.success('收藏歌单成功');
+          }
+        })
+        .catch(() => {
+          message.error('收藏歌单失败');
+        })
+        .finally(() => {
+          refreshUserInfo();
+        });
+    }
+  }, [message, playlist, refreshUserInfo]);
+
+  // 播放某歌单, 接受可选的 playlistId 参数, 如果提供则播放对应歌单, 否则播放传入的 playlist
+  const playWholePlaylist = useCallback(
+    (playlistId?: string) => {
+      const id = playlistId || playlist?.id;
+
+      if (!id) {
+        return;
+      }
+      // 获取歌曲信息后播放整张歌单
+      getPlaylistInfo(id).then((res) => {
+        if (res.data.success) {
+          if (res.data.playlist?.songs?.length) {
+            resetNewSongs(res.data.playlist.songs || []);
+          } else {
+            message.warning('该歌单为空');
+          }
+        }
+      });
+    },
+    [message, playlist?.id, resetNewSongs],
+  );
+
+  return {
+    isPlaylistCollected,
+    collectPlaylist,
+    playWholePlaylist,
+    // TODO: 暂无取消收藏的操作
   };
 }

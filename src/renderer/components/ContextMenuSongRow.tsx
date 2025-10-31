@@ -4,20 +4,20 @@ import { usePlayer, useSong } from '../hooks';
 import { useMusicPlayerStore } from '../store';
 import SongActionsDropdown from './SongActionsDropdown';
 
-type ContextMenuRowProps = {
+type ContextMenuSongRowProps = {
   children: React.ReactNode;
   record?: Song;
   className: string;
   style: React.CSSProperties;
 };
 
-// 自定义表格行, 支持右键菜单
-export default function ContextMenuRow({
+// 自定义歌曲表格行, 支持右键菜单
+export default function ContextMenuSongRow({
   children,
   record,
   className,
   ...restProps
-}: ContextMenuRowProps) {
+}: ContextMenuSongRowProps) {
   const { matchCurrentSong } = useSong(record);
   const { playNewSong, playOrPauseCurrentSong } = usePlayer();
   const brokenSongIds = useMusicPlayerStore((state) => state.brokenSongIds);

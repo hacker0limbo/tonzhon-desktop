@@ -8,15 +8,15 @@ import {
 } from '@ant-design/icons';
 import { Flex, Image, Typography, Button, theme, Divider, App } from 'antd';
 import { useParams } from 'react-router-dom';
+import { type PlaylistInfo, getPlaylistInfo } from '../../api';
 import {
-  type PlaylistInfo,
-  getPlaylistInfo,
-  addPlaylistToCollection,
-} from '../../api';
-import { fallbackCover, formatCount, getPlaylistCoverUrl } from '../../utils';
+  copyPlaylistLinkToClipboard,
+  fallbackCover,
+  formatCount,
+  getPlaylistCoverUrl,
+} from '../../utils';
 import SongTable from '../../components/SongTable';
-import { useAuthStore } from '../../store';
-import { useRefresh } from '../../hooks';
+import { usePlaylistCollection } from '../../hooks';
 import { REFRESH_PLAYLIST_EVENT } from '../../constants';
 
 export default function Playlist() {
@@ -27,32 +27,10 @@ export default function Playlist() {
     token: { borderRadiusLG },
   } = theme.useToken();
   const [loading, setLoading] = useState(false);
-  const collectedPlaylists = useAuthStore(
-    (state) => state.user?.collectedPlaylists,
-  );
-  const { refreshUserInfo } = useRefresh();
-  // 该歌单是否被收藏
-  const isPlaylistCollected = useMemo(
-    () => collectedPlaylists?.some((playlist) => playlist.id === id),
-    [collectedPlaylists, id],
-  );
-
-  const collectPlaylist = useCallback(() => {
-    if (id && playlistInfo) {
-      addPlaylistToCollection(id, playlistInfo.name)
-        .then((res) => {
-          if (res.status >= 200 && res.status < 300) {
-            message.success('收藏歌单成功');
-          }
-        })
-        .catch(() => {
-          message.error('收藏歌单失败');
-        })
-        .finally(() => {
-          refreshUserInfo();
-        });
-    }
-  }, [id, message, playlistInfo, refreshUserInfo]);
+  const { isPlaylistCollected, collectPlaylist } = usePlaylistCollection({
+    id,
+    name: playlistInfo?.name,
+  });
 
   const fetchPlaylistInfo = useCallback(() => {
     if (id) {
@@ -138,12 +116,7 @@ export default function Playlist() {
             <Button
               icon={<ShareAltOutlined />}
               onClick={() => {
-                const playlistUrl = `https://tonzhon.whamon.com/playlist/${id}`;
-                window.electron?.copyToClipboard(playlistUrl);
-                message.success({
-                  duration: 3,
-                  content: '歌单链接已复制',
-                });
+                copyPlaylistLinkToClipboard(id);
               }}
             >
               分享

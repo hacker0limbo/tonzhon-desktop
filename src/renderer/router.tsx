@@ -13,6 +13,7 @@ import Settings from './pages/settings';
 import Profile from './pages/profile';
 import ImportPlaylist from './pages/playlists/ImportPlaylist';
 import ProtectedRoute from './components/ProtectedRoute';
+import PasswordReset from './pages/password-reset';
 
 const router = createMemoryRouter([
   {
@@ -79,6 +80,10 @@ const router = createMemoryRouter([
             <ImportPlaylist />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: '/password-reset',
+        element: <PasswordReset />,
       },
     ],
   },

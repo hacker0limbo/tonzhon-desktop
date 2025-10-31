@@ -13,13 +13,19 @@ import {
 } from 'antd';
 import {
   ContactsOutlined,
+  DollarOutlined,
+  GithubOutlined,
+  GlobalOutlined,
+  InfoCircleOutlined,
   MailOutlined,
   WechatOutlined,
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { useSettingsStore } from '../../store';
+import support from '../../images/support.jpg';
 
 export default function Settings() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const autoPlay = useSettingsStore((state) => state.player.autoPlay);
   const loadAudioErrorPlayNext = useSettingsStore(
     (state) => state.player.loadAudioErrorPlayNext,
@@ -34,6 +40,7 @@ export default function Settings() {
   const themeColor = useSettingsStore((state) => state.theme.color);
   const themeMode = useSettingsStore((state) => state.theme.mode);
   const themeCustomColor = useSettingsStore((state) => state.theme.customColor);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -154,6 +161,24 @@ export default function Settings() {
       <Row align="top">
         <Col span={3}>
           <Typography.Title level={5} style={{ margin: 0 }}>
+            账号
+          </Typography.Title>
+        </Col>
+        <Col span={21}>
+          <Button
+            onClick={() => {
+              navigate('/password-reset');
+            }}
+          >
+            重置密码
+          </Button>
+        </Col>
+      </Row>
+      <Divider size="middle" />
+
+      <Row align="top">
+        <Col span={3}>
+          <Typography.Title level={5} style={{ margin: 0 }}>
             缓存
           </Typography.Title>
         </Col>
@@ -185,6 +210,7 @@ export default function Settings() {
             <Flex gap="small" align="baseline">
               <Typography.Text>相关链接</Typography.Text>
               <Button
+                icon={<GithubOutlined />}
                 onClick={() => {
                   window.electron?.openExternal(
                     'https://github.com/hacker0limbo/tonzhon-desktop',
@@ -192,6 +218,22 @@ export default function Settings() {
                 }}
               >
                 GitHub
+              </Button>
+              <Button
+                icon={<DollarOutlined />}
+                onClick={() => {
+                  modal.info({
+                    title: '捐赠支持',
+                    content: (
+                      <img src={support} alt="support" style={{ width: 300 }} />
+                    ),
+                    footer: null,
+                    maskClosable: true,
+                    closable: true,
+                  });
+                }}
+              >
+                支持我
               </Button>
               <Dropdown
                 placement="topLeft"
@@ -221,25 +263,15 @@ export default function Settings() {
                 }}
                 trigger={['click']}
               >
-                <Button iconPosition="end" icon={<ContactsOutlined />}>
-                  联系我
-                </Button>
+                <Button icon={<ContactsOutlined />}>联系我</Button>
               </Dropdown>
               <Button
+                icon={<GlobalOutlined />}
                 onClick={() => {
                   window.electron?.openExternal('https://tonzhon.whamon.com/');
                 }}
               >
                 网页版
-              </Button>
-              <Button
-                onClick={() => {
-                  window.electron?.openExternal(
-                    'https://universe.tonzhon.whamon.com/about-tonzhon/',
-                  );
-                }}
-              >
-                关于铜钟
               </Button>
             </Flex>
           </Flex>

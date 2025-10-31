@@ -5,6 +5,7 @@ on:
     branches:
       - master
 
+# 参考一下这个: https://github.com/timeshiftsauce/CeruMusic/blob/main/.github/workflows/main.yml
 jobs:
   publish:
     runs-on: ${{ matrix.os }}

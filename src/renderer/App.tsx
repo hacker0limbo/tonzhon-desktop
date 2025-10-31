@@ -12,6 +12,7 @@ import {
   LogoutOutlined,
   MoonOutlined,
   PlusOutlined,
+  QuestionCircleOutlined,
   ReloadOutlined,
   SettingOutlined,
   SoundOutlined,
@@ -55,6 +56,7 @@ import { signout, getUserInfo, getFavoriteSongs } from './api';
 import CreatePlaylistModal from './components/CreatePlaylistModal';
 import './App.css';
 import Auth from './components/Auth';
+import Guide from './components/Guide';
 
 const { Header, Content, Sider } = Layout;
 
@@ -142,6 +144,7 @@ export default function App() {
     (state) => state.openCreatePlaylistModal,
   );
   const { refreshUserInfo, refreshFavoriteSongs } = useRefresh();
+  const [openGuide, setOpenGuide] = useState(false);
 
   const userMenuSelectedKey = useMemo(() => {
     const [_, path, dynamicPath] = location.pathname.split('/');
@@ -294,6 +297,7 @@ export default function App() {
           justifyContent: 'space-between',
           alignItems: 'center',
         }}
+        className="header"
       >
         <Flex align="center">
           <Typography.Title
@@ -486,14 +490,36 @@ export default function App() {
             {siderCollapsed ? null : (
               <>
                 <Col span={8} style={{ textAlign: 'center' }}>
-                  <SettingOutlined
-                    className="icon-link"
-                    style={{ fontSize: 16 }}
-                    title="设置"
-                    onClick={() => {
-                      navigate('/settings');
+                  <Dropdown
+                    trigger={['click']}
+                    placement="topLeft"
+                    menu={{
+                      items: [
+                        {
+                          key: 'settings',
+                          label: '设置',
+                          icon: <SettingOutlined />,
+                          onClick: () => {
+                            navigate('/settings');
+                          },
+                        },
+                        {
+                          key: 'guide',
+                          label: '指南',
+                          icon: <QuestionCircleOutlined />,
+                          onClick: () => {
+                            setOpenGuide(true);
+                          },
+                        },
+                      ],
                     }}
-                  />
+                  >
+                    <SettingOutlined
+                      className="icon-link"
+                      style={{ fontSize: 16 }}
+                      title="设置"
+                    />
+                  </Dropdown>
                 </Col>
                 <Col span={8} style={{ textAlign: 'center' }}>
                   {themeMode === 'light' ? (
@@ -523,6 +549,7 @@ export default function App() {
 
         <Layout style={{ padding: '16px' }}>
           <Content
+            className="content"
             ref={contentRef}
             style={{
               padding: 16,
@@ -604,6 +631,12 @@ export default function App() {
 
       <LoginModal />
       <CreatePlaylistModal />
+      <Guide
+        open={openGuide}
+        closeGuide={() => {
+          setOpenGuide(false);
+        }}
+      />
     </Layout>
   );
 }

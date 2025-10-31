@@ -9,19 +9,21 @@ import {
   Typography,
   type TableProps,
   theme,
+  Input,
 } from 'antd';
 import {
   CheckOutlined,
   DownloadOutlined,
   PlayCircleOutlined,
   PlusSquareOutlined,
+  SearchOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { type Song } from '../api';
 import { useMusicPlayerStore } from '../store';
 import SongTableActions from './SongTableActions';
-import ContextMenuRow from './ContextMenuRow';
+import ContextMenuSongRow from './ContextMenuSongRow';
 import { usePlayer } from '../hooks';
 import { fallbackCover } from '../utils';
 
@@ -39,11 +41,30 @@ export default function SongTable({ songs, loading }: SongTableProps) {
   const resetNewSongs = useMusicPlayerStore((state) => state.resetNewSongs);
   const [showBatchActions, setShowBatchActions] = useState(false);
   const [selectedSongIds, setSelectedSongIds] = useState<string[]>([]);
+  const [searchedText, setSearchedText] = useState<string>('');
   // 禁用批量操作按钮
   const disabledBatchAction = useMemo(
     () => showBatchActions && !selectedSongIds.length,
     [showBatchActions, selectedSongIds],
   );
+  // 搜索专辑/歌手/歌曲名称
+  const filteredSongs = useMemo(() => {
+    if (!searchedText) {
+      return songs;
+    }
+    return songs.filter((song) => {
+      const lowerSearchedText = searchedText.toLowerCase();
+      const inName = song.name.toLowerCase().includes(lowerSearchedText);
+      const inArtists = song.artists?.some((artist) =>
+        artist.name.toLowerCase().includes(lowerSearchedText),
+      );
+      const inAlbum = song.album?.name
+        .toLowerCase()
+        .includes(lowerSearchedText);
+      return inName || inArtists || inAlbum;
+    });
+  }, [searchedText, songs]);
+  // 批量操作选中的歌曲
   const selectedSongs = useMemo(
     () => songs.filter((s) => selectedSongIds.includes(s.newId)),
     [songs, selectedSongIds],
@@ -138,55 +159,69 @@ export default function SongTable({ songs, loading }: SongTableProps) {
 
   return (
     <>
-      <Flex gap="middle">
-        <Button
-          icon={<PlayCircleOutlined />}
-          onClick={() => {
-            if (showBatchActions) {
-              // 批量播放歌曲
-              resetNewSongs(selectedSongs);
-            } else {
-              resetNewSongs(songs);
-            }
-          }}
-          disabled={disabledBatchAction || !songs.length}
-        >
-          {showBatchActions ? '批量播放' : '播放全部'}
-        </Button>
-        {showBatchActions ? (
+      <Flex justify="space-between" align="center">
+        <Flex gap="middle">
           <Button
-            disabled={disabledBatchAction}
-            icon={<PlusSquareOutlined />}
+            icon={<PlayCircleOutlined />}
             onClick={() => {
-              addSongsToPlaylist(selectedSongs);
+              if (showBatchActions) {
+                // 批量播放歌曲
+                resetNewSongs(selectedSongs);
+              } else {
+                resetNewSongs(songs);
+              }
+            }}
+            disabled={disabledBatchAction || !songs.length}
+          >
+            {showBatchActions ? '批量播放' : '播放全部'}
+          </Button>
+          {showBatchActions ? (
+            <Button
+              disabled={disabledBatchAction}
+              icon={<PlusSquareOutlined />}
+              onClick={() => {
+                addSongsToPlaylist(selectedSongs);
+              }}
+            >
+              批量添加
+            </Button>
+          ) : null}
+          {/* TODO: 暂不实现批量和全部下载 */}
+          <Button disabled icon={<DownloadOutlined />} title="暂不支持该功能">
+            {showBatchActions ? '批量下载' : '下载全部'}
+          </Button>
+          <Button
+            disabled={!songs.length}
+            icon={
+              showBatchActions ? <CheckOutlined /> : <UnorderedListOutlined />
+            }
+            onClick={() => {
+              setShowBatchActions(!showBatchActions);
+              // 不管关闭开始打开都重置选中状态
+              setSelectedSongIds([]);
             }}
           >
-            批量添加
+            {showBatchActions ? '完成' : '批量操作'}
           </Button>
-        ) : null}
-        {/* TODO: 暂不实现批量和全部下载 */}
-        <Button disabled icon={<DownloadOutlined />} title="暂不支持该功能">
-          {showBatchActions ? '批量下载' : '下载全部'}
-        </Button>
-        <Button
-          disabled={!songs.length}
-          icon={
-            showBatchActions ? <CheckOutlined /> : <UnorderedListOutlined />
-          }
-          onClick={() => {
-            setShowBatchActions(!showBatchActions);
-            // 不管关闭开始打开都重置选中状态
-            setSelectedSongIds([]);
+        </Flex>
+
+        <Input
+          prefix={<SearchOutlined />}
+          placeholder="搜索歌曲"
+          style={{ width: 150 }}
+          allowClear
+          value={searchedText}
+          onChange={(e) => {
+            const { value } = e.target;
+            setSearchedText(value.trim());
           }}
-        >
-          {showBatchActions ? '完成' : '批量操作'}
-        </Button>
+        />
       </Flex>
       <Table
         rowKey={(record) => record.newId}
         style={{ marginTop: 16 }}
         size="middle"
-        dataSource={songs}
+        dataSource={filteredSongs}
         columns={columns}
         loading={loading}
         pagination={false}
@@ -200,7 +235,7 @@ export default function SongTable({ songs, loading }: SongTableProps) {
         }}
         components={{
           body: {
-            row: ContextMenuRow,
+            row: ContextMenuSongRow,
           },
         }}
         rowSelection={

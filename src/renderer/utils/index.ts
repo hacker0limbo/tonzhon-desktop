@@ -13,6 +13,16 @@ export function copySongInfoToClipboard(song?: Song) {
   });
 }
 
+// 复制歌单链接到剪贴板
+export function copyPlaylistLinkToClipboard(playlistId?: string) {
+  const playlistUrl = `https://tonzhon.whamon.com/playlist/${playlistId}`;
+  window.electron?.copyToClipboard(playlistUrl);
+  message.success({
+    duration: 3,
+    content: '歌单链接已复制',
+  });
+}
+
 export function getPlaylistCoverUrl(cover?: string) {
   if (!cover) {
     return '';
