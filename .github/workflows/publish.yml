@@ -36,4 +36,4 @@ jobs:
           # This is used for uploading release assets to github
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          npm exec electron-builder -- --publish always -mwl
+          npm exec electron-builder -- --publish always -mw
